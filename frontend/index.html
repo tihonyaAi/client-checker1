@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Клиентская база</title>
+</head>
+<body>
+    <h2>Вход</h2>
+    <input id="username" placeholder="Логин"><br>
+    <input id="password" type="password" placeholder="Пароль"><br>
+    <button onclick="login()">Войти</button>
+    <p id="login_status"></p>
+
+    <h2>Проверка ников</h2>
+    <textarea id="nicknames" placeholder="Один ник на строку"></textarea><br>
+    <button onclick="check()">Проверить</button>
+    <div id="results"></div>
+
+    <h2>История</h2>
+    <button onclick="loadHistory()">Показать мою историю</button>
+    <ul id="history"></ul>
+
+<script>
+let token = "";
+
+async function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    const form = new URLSearchParams();
+    form.append("username", username);
+    form.append("password", password);
+
+    const res = await fetch("https://your-render-backend-url/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: form.toString()
+    });
+
+    if (res.ok) {
+        const data = await res.json();
+        token = data.access_token;
+        document.getElementById("login_status").innerText = "Вход выполнен!";
+    } else {
+        document.getElementById("login_status").innerText = "Ошибка входа.";
+    }
+}
+
+async function check() {
+    const text = document.getElementById("nicknames").value.trim();
+    const nicknames = text.split("\n").map(n => n.trim()).filter(n => n !== "");
+
+    const res = await fetch("https://your-render-backend-url/check", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ nicknames })
+    });
+
+    const data = await res.json();
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "";
+    for (const item of data.results) {
+        const p = document.createElement("p");
+        p.textContent = `${item.nickname}: ${item.status}`;
+        resultsDiv.appendChild(p);
+    }
+}
+
+async function loadHistory() {
+    const res = await fetch("https://your-render-backend-url/history", {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    });
+    const data = await res.json();
+    const list = document.getElementById("history");
+    list.innerHTML = "";
+    for (const nick of data) {
+        const li = document.createElement("li");
+        li.textContent = nick;
+        list.appendChild(li);
+    }
+}
+</script>
+</body>
+</html>
