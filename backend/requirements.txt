@@ -2,6 +2,7 @@ flask
 fastapi
 uvicorn
 passlib
+PyJWT
 blinker
 click
 itsdangerous
