@@ -1,87 +1,145 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Клиентская база</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+        }
+        input, textarea, button {
+            width: 100%;
+            margin: 8px 0;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        #results p {
+            margin: 4px 0;
+            padding: 6px;
+            border-bottom: 1px solid #ddd;
+        }
+        #history li {
+            margin: 2px 0;
+        }
+        h2 {
+            margin-top: 30px;
+        }
+    </style>
 </head>
 <body>
     <h2>Вход</h2>
-    <input id="username" placeholder="Логин"><br>
-    <input id="password" type="password" placeholder="Пароль"><br>
+    <input id="username" placeholder="Логин" />
+    <input id="password" type="password" placeholder="Пароль" />
     <button onclick="login()">Войти</button>
     <p id="login_status"></p>
 
     <h2>Проверка ников</h2>
-    <textarea id="nicknames" placeholder="Один ник на строку"></textarea><br>
-    <button onclick="check()">Проверить</button>
+    <textarea id="nicknames" placeholder="Один ник на строку"></textarea>
+    <button onclick="check()" disabled id="checkBtn">Проверить</button>
     <div id="results"></div>
 
     <h2>История</h2>
-    <button onclick="loadHistory()">Показать мою историю</button>
+    <button onclick="loadHistory()" disabled id="historyBtn">Показать мою историю</button>
     <ul id="history"></ul>
 
 <script>
+const API_BASE_URL = "https://client-checker1-7.onrender.com";  // <- сюда свой backend URL
+
 let token = "";
 
 async function login() {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    if (!username || !password) {
+        alert("Введите логин и пароль");
+        return;
+    }
 
     const form = new URLSearchParams();
     form.append("username", username);
     form.append("password", password);
 
-    const res = await fetch("https://your-render-backend-url/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: form.toString()
-    });
+    try {
+        const res = await fetch(`${API_BASE_URL}/token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form.toString()
+        });
 
-    if (res.ok) {
+        if (!res.ok) throw new Error("Неверный логин или пароль");
+
         const data = await res.json();
         token = data.access_token;
+
         document.getElementById("login_status").innerText = "Вход выполнен!";
-    } else {
-        document.getElementById("login_status").innerText = "Ошибка входа.";
+        document.getElementById("checkBtn").disabled = false;
+        document.getElementById("historyBtn").disabled = false;
+    } catch (e) {
+        document.getElementById("login_status").innerText = "Ошибка входа: " + e.message;
     }
 }
 
 async function check() {
     const text = document.getElementById("nicknames").value.trim();
+    if (!text) {
+        alert("Введите хотя бы один ник");
+        return;
+    }
     const nicknames = text.split("\n").map(n => n.trim()).filter(n => n !== "");
 
-    const res = await fetch("https://your-render-backend-url/check", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-        },
-        body: JSON.stringify({ nicknames })
-    });
+    try {
+        const res = await fetch(`${API_BASE_URL}/check`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({ nicknames })
+        });
 
-    const data = await res.json();
-    const resultsDiv = document.getElementById("results");
-    resultsDiv.innerHTML = "";
-    for (const item of data.results) {
-        const p = document.createElement("p");
-        p.textContent = `${item.nickname}: ${item.status}`;
-        resultsDiv.appendChild(p);
+        if (!res.ok) throw new Error("Ошибка проверки");
+
+        const data = await res.json();
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = "";
+
+        for (const item of data.results) {
+            const p = document.createElement("p");
+            p.textContent = `${item.nickname}: ${item.status}`;
+            resultsDiv.appendChild(p);
+        }
+    } catch (e) {
+        alert("Ошибка: " + e.message);
     }
 }
 
 async function loadHistory() {
-    const res = await fetch("https://your-render-backend-url/history", {
-        headers: {
-            "Authorization": "Bearer " + token
+    try {
+        const res = await fetch(`${API_BASE_URL}/history`, {
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        });
+        if (!res.ok) throw new Error("Ошибка загрузки истории");
+
+        const data = await res.json();
+        const list = document.getElementById("history");
+        list.innerHTML = "";
+
+        for (const nick of data) {
+            const li = document.createElement("li");
+            li.textContent = nick;
+            list.appendChild(li);
         }
-    });
-    const data = await res.json();
-    const list = document.getElementById("history");
-    list.innerHTML = "";
-    for (const nick of data) {
-        const li = document.createElement("li");
-        li.textContent = nick;
-        list.appendChild(li);
+    } catch (e) {
+        alert("Ошибка: " + e.message);
     }
 }
 </script>
