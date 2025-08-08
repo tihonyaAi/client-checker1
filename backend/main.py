@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,8 +10,10 @@ from pydantic import BaseModel
 import jwt
 import os
 
+# === Создание приложения ===
 app = FastAPI()
 
+# === Разрешаем CORS (на всякий случай) ===
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,25 +22,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# === Шаблоны HTML ===
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
+# === Настройки JWT ===
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+# === Работа с паролями ===
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
-# Добавляем пользователя test с паролем 12345
+# === Имитация базы пользователей ===
 fake_users = {
-    "test": {
-        "username": "test",
-        "hashed_password": pwd_context.hash("12345"),
+    "admin": {
+        "username": "admin",
+        "hashed_password": pwd_context.hash("password"),
         "history": []
     }
 }
 
+# === Утилиты ===
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -62,6 +68,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         return fake_users[username]
     except:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+# === Роуты ===
 
 @app.get("/", response_class=HTMLResponse)
 def get_home(request: Request):
