@@ -1,306 +1,280 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AurumTrade</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AurumTrade</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0b0e11;
+    color: #f0b90b;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
 
-        /* Уведомления */
-        #notification {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.85);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 1rem;
-            display: none;
-            z-index: 999;
-            animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        }
-        @keyframes fadein {
-            from { opacity: 0; transform: translate(-50%, -20px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        @keyframes fadeout {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
+  #notification {
+    position: fixed;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    display: none;
+    z-index: 999;
+  }
 
-        /* Экран входа */
-        .login-screen {
-            height: 100vh;
-            background: linear-gradient(135deg, #1cb5e0, #000851);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
-        }
-        .login-box {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 15px;
-            width: 320px;
-            text-align: center;
-            backdrop-filter: blur(8px);
-        }
-        .login-box input {
-            width: 90%;
-            padding: 12px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 8px;
-            outline: none;
-            font-size: 1rem;
-        }
-        .login-box button {
-            width: 95%;
-            padding: 12px;
-            background-color: #00d4ff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            margin-top: 5px;
-        }
-        .login-box button:hover {
-            background-color: #00aacc;
-        }
+  /* Вход */
+  #loginScreen {
+    flex: 1;
+    background: linear-gradient(135deg, #40c4bf, #1b7a7a);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+  #loginScreen h1 {
+    margin-bottom: 20px;
+    font-weight: bold;
+    font-size: 2.5rem;
+    color: white;
+  }
+  #loginForm {
+    background: rgba(255 255 255 / 0.1);
+    padding: 30px;
+    border-radius: 15px;
+    width: 320px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+  }
+  #loginForm input {
+    width: 90%;
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+  }
+  #loginForm button {
+    width: 95%;
+    padding: 12px;
+    background-color: #00d4ff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    margin-top: 5px;
+    transition: background-color 0.3s;
+  }
+  #loginForm button:hover {
+    background-color: #00aacc;
+  }
 
-        /* Рабочая зона */
-        .work-screen {
-            height: 100vh;
-            background-color: #0b0e11;
-            color: #f0b90b;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-        .header {
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        .main-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        /* Статус ника над полем ввода */
-        #nicknameStatus {
-            min-height: 28px;
-            margin-bottom: 6px;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-        .status-icon {
-            font-size: 1.4rem;
-        }
-        .status-icon.error {
-            color: #ff4d4f;
-        }
-        .status-icon.success {
-            color: #4caf50;
-        }
-        .nickname-input {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            border: 1px solid #f0b90b;
-            outline: none;
-            background-color: #1e2329;
-            color: white;
-        }
-        .buttons {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-        .btn {
-            padding: 12px 20px;
-            font-size: 1.1rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .btn-check {
-            background-color: #f0b90b;
-            color: #0b0e11;
-        }
-        .btn-check:hover {
-            background-color: #d9a308;
-        }
-        .btn-history {
-            background-color: #1e2329;
-            color: #f0b90b;
-            border: 1px solid #f0b90b;
-        }
-        .btn-history:hover {
-            background-color: #2a2f35;
-        }
-        .history-box {
-            margin-top: 20px;
-            background-color: #1e2329;
-            padding: 15px;
-            border-radius: 8px;
-            max-width: 100%;
-            max-height: 200px;
-            overflow-y: auto;
-            width: 100%;
-        }
-    </style>
+  /* Рабочая зона */
+  #workScreen {
+    display: none;
+    flex: 1;
+    padding: 20px 40px;
+    display: flex;
+    flex-direction: column;
+    background-color: #0b0e11;
+  }
+  #workScreen .header {
+    font-weight: bold;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+  }
+  #nicknameStatus {
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #nicknameStatus span {
+    display: inline-block;
+  }
+  #nicknameStatus .icon {
+    font-size: 1.3rem;
+  }
+  #nicknameStatus.success {
+    color: #4CAF50;
+  }
+  #nicknameStatus.error {
+    color: #F44336;
+  }
+  #nicknameInput {
+    width: 100%;
+    max-width: 600px;
+    padding: 14px;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    border: 2px solid #f0b90b;
+    background-color: #1e2329;
+    color: white;
+    outline: none;
+  }
+  #buttons {
+    margin-top: 15px;
+    display: flex;
+    gap: 15px;
+  }
+  button.btn {
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  button.btn-check {
+    background-color: #f0b90b;
+    color: #0b0e11;
+    transition: background-color 0.3s;
+  }
+  button.btn-check:hover {
+    background-color: #d9a308;
+  }
+  button.btn-history {
+    background-color: #1e2329;
+    color: #f0b90b;
+    border: 1px solid #f0b90b;
+    transition: background-color 0.3s;
+  }
+  button.btn-history:hover {
+    background-color: #2a2f35;
+  }
+  #historyBox {
+    margin-top: 25px;
+    max-width: 600px;
+    background-color: #1e2329;
+    border-radius: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 15px;
+    font-size: 1rem;
+  }
+  #historyBox div {
+    padding: 5px 0;
+    border-bottom: 1px solid #333;
+  }
+</style>
 </head>
 <body>
 
 <div id="notification"></div>
 
 <!-- Экран входа -->
-<div id="loginScreen" class="login-screen">
-    <h1>AurumTrade</h1>
-    <div class="login-box">
-        <form id="loginForm">
-            <input type="text" id="username" placeholder="Логин" required />
-            <input type="password" id="password" placeholder="Пароль" required />
-            <button type="submit">Войти</button>
-        </form>
-    </div>
+<div id="loginScreen">
+  <h1>AurumTrade</h1>
+  <form id="loginForm">
+    <input type="text" id="username" placeholder="Логин" required />
+    <input type="password" id="password" placeholder="Пароль" required />
+    <button type="submit">Войти</button>
+  </form>
 </div>
 
 <!-- Рабочая зона -->
-<div id="workScreen" class="work-screen" style="display:none;">
-    <div class="header">AurumTrade</div>
-    <div class="main-area">
-        <div id="nicknameStatus"></div>
-        <input type="text" id="nickname" class="nickname-input" placeholder="Введите ник" />
-        <div class="buttons">
-            <button id="checkBtn" class="btn btn-check">Проверить</button>
-            <button id="historyBtn" class="btn btn-history">История</button>
-        </div>
-        <div id="history" class="history-box" style="display:none;"></div>
-    </div>
+<div id="workScreen">
+  <div class="header">AurumTrade</div>
+  <div id="nicknameStatus"></div>
+  <input id="nicknameInput" type="text" placeholder="Введите ник" autocomplete="off" />
+  <div id="buttons">
+    <button id="checkBtn" class="btn btn-check">Проверить</button>
+    <button id="historyBtn" class="btn btn-history">История</button>
+  </div>
+  <div id="historyBox" style="display:none;"></div>
 </div>
 
 <script>
-    const notification = document.getElementById("notification");
-    const loginScreen = document.getElementById("loginScreen");
-    const workScreen = document.getElementById("workScreen");
-    const historyBox = document.getElementById("history");
-    const nicknameStatus = document.getElementById("nicknameStatus");
-    const nicknameInput = document.getElementById("nickname");
+  const notification = document.getElementById("notification");
+  const loginScreen = document.getElementById("loginScreen");
+  const workScreen = document.getElementById("workScreen");
+  const nicknameStatus = document.getElementById("nicknameStatus");
+  const nicknameInput = document.getElementById("nicknameInput");
+  const historyBox = document.getElementById("historyBox");
 
-    function showNotification(message) {
-        notification.textContent = message;
-        notification.style.display = "block";
-        setTimeout(() => notification.style.display = "none", 3000);
+  function showNotification(message) {
+    notification.textContent = message;
+    notification.style.display = "block";
+    setTimeout(() => (notification.style.display = "none"), 3000);
+  }
+
+  // Очищаем статус при вводе нового ника
+  nicknameInput.addEventListener("input", () => {
+    nicknameStatus.textContent = "";
+    nicknameStatus.className = "";
+  });
+
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    try {
+      const res = await fetch("/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+      });
+
+      if (!res.ok) {
+        showNotification("❌ Неверный логин или пароль");
+        return;
+      }
+
+      const data = await res.json();
+      localStorage.setItem("token", data.access_token);
+
+      loginScreen.style.display = "none";
+      workScreen.style.display = "flex";
+
+      showNotification("✅ Успешный вход");
+    } catch {
+      showNotification("❌ Ошибка сети");
+    }
+  });
+
+  document.getElementById("checkBtn").addEventListener("click", async () => {
+    const nickname = nicknameInput.value.trim();
+    if (!nickname) {
+      showNotification("⚠ Введите ник");
+      return;
     }
 
-    // Показываем статус ника с иконкой
-    function showNicknameStatus(text, status) {
-        let icon = "";
-        if (status === "success") {
-            icon = `<span class="status-icon success">&#10004;</span>`; // ✓
-            nicknameStatus.style.color = "#4caf50";
-        } else if (status === "error") {
-            icon = `<span class="status-icon error">&#10006;</span>`; // ✖
-            nicknameStatus.style.color = "#ff4d4f";
-        } else {
-            icon = "";
-            nicknameStatus.style.color = "white";
-        }
-        nicknameStatus.innerHTML = icon + text;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showNotification("❌ Авторизуйтесь заново");
+      return;
     }
 
-    // Очистка статуса при вводе нового ника
-    nicknameInput.addEventListener("input", () => {
-        nicknameStatus.innerHTML = "";
-    });
+    try {
+      const res = await fetch("/check", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ nicknames: [nickname] })
+      });
 
-    document.getElementById("loginForm").addEventListener("submit", async function(e) {
-        e.preventDefault();
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value.trim();
+      if (!res.ok) {
+        showNotification("❌ Ошибка при проверке ника");
+        return;
+      }
 
-        const res = await fetch("/token", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-        });
+      const data = await res.json();
 
-        if (res.ok) {
-            const data = await res.json();
-            localStorage.setItem("token", data.access_token);
-            loginScreen.style.display = "none";
-            workScreen.style.display = "flex";
-            showNotification("✅ Успешный вход");
-        } else {
-            showNotification("❌ Неверный логин или пароль");
-        }
-    });
+      const status = data.results[0].status; // "Найдено" или "Не найдено"
+      nicknameStatus.textContent = `${nickname}: ${status}`;
 
-    document.getElementById("checkBtn").addEventListener("click", async () => {
-        const nickname = nicknameInput.value.trim();
-        if (!nickname) {
-            showNicknameStatus("Введите ник", "error");
-            return;
-        }
-
-        const token = localStorage.getItem("token");
-        const res = await fetch("/check", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ nicknames: [nickname] })
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            const status = data.results[0].status.toLowerCase();
-            if (status === "найдено" || status === "занят" || status === "занятo") {
-                showNicknameStatus(`Ник "${nickname}" занят`, "error");
-            } else {
-                showNicknameStatus(`Ник "${nickname}" свободен`, "success");
-            }
-            // Не очищаем поле, чтобы пользователь мог видеть ник после проверки
-            // nicknameInput.value = "";
-        } else {
-            showNicknameStatus("Ошибка при проверке ника", "error");
-        }
-    });
-
-    document.getElementById("historyBtn").addEventListener("click", async () => {
-        const token = localStorage.getItem("token");
-        const res = await fetch("/history", { headers: { "Authorization": `Bearer ${token}` } });
-
-        if (res.ok) {
-            const data = await res.json();
-            if (data.length === 0) {
-                historyBox.innerHTML = "<div>История пуста</div>";
-            } else {
-                historyBox.innerHTML = data.map(item => `<div>${item}</div>`).join("");
-            }
-            historyBox.style.display = "block";
-        } else {
-            showNotification("❌ Ошибка при получении истории");
-        }
-    });
-</script>
-
-</body>
-</html>
+      if (status === "Найдено") {
+        nicknameStatus.className = "success";
+        nicknameStatus.innerHTML = `${nickname}: <span class="icon">✔️</span> Найдено
