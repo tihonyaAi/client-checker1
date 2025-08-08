@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, Depends, HTTPException
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,10 +30,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
-# База пользователей — ник и хэш пароля
-fake_users = {}
-
-DEFAULT_PASSWORD = "12345"
+# Добавляем пользователя test с паролем 12345
+fake_users = {
+    "test": {
+        "username": "test",
+        "hashed_password": pwd_context.hash("12345"),
+        "history": []
+    }
+}
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -62,21 +66,6 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 @app.get("/", response_class=HTMLResponse)
 def get_home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
-
-@app.post("/check_username")
-async def check_username(data: dict):
-    username = data.get("username")
-    if not username:
-        raise HTTPException(status_code=400, detail="Username required")
-    if username in fake_users:
-        raise HTTPException(status_code=400, detail="Ник занят")
-    # Добавляем пользователя с паролем по умолчанию '12345'
-    fake_users[username] = {
-        "username": username,
-        "hashed_password": pwd_context.hash(DEFAULT_PASSWORD),
-        "history": []
-    }
-    return {"message": f"Пользователь {username} создан с паролем '{DEFAULT_PASSWORD}'"}
 
 @app.post("/token")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
