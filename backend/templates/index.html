@@ -2,90 +2,95 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Проверка клиентов</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AurumTrade — Вход</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1cb5e0, #000851); /* Бирюзово-синий градиент */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+        .login-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            width: 300px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+        }
+        input[type="text"], input[type="password"] {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+            font-size: 1rem;
+        }
+        button {
+            width: 95%;
+            padding: 12px;
+            background-color: #00d4ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background-color: #00aacc;
+        }
+    </style>
 </head>
 <body>
-    <h2>Вход</h2>
-    <input id="username" placeholder="Логин"><br>
-    <input id="password" type="password" placeholder="Пароль"><br>
-    <button onclick="login()">Войти</button>
-    <p id="login_status"></p>
 
-    <div id="main" style="display:none;">
-        <h2>Проверка ников</h2>
-        <textarea id="nicknames" placeholder="Один ник на строку"></textarea><br>
-        <button onclick="check()">Проверить</button>
-        <div id="results"></div>
-
-        <h2>История</h2>
-        <button onclick="loadHistory()">Показать историю</button>
-        <ul id="history"></ul>
+    <h1>AurumTrade</h1>
+    <div class="login-box">
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Логин" required>
+            <input type="password" id="password" placeholder="Пароль" required>
+            <button type="submit">Войти</button>
+        </form>
     </div>
 
-<script>
-let token = "";
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
 
-async function login() {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
+            const res = await fetch("/token", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+            });
 
-    const form = new URLSearchParams();
-    form.append("username", username);
-    form.append("password", password);
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem("token", data.access_token);
+                alert("Успешный вход!");
+                // Здесь можно сделать редирект на главную страницу системы
+            } else {
+                alert("Неверный логин или пароль");
+            }
+        });
+    </script>
 
-    const res = await fetch("/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: form.toString()
-    });
-
-    if (res.ok) {
-        const data = await res.json();
-        token = data.access_token;
-        document.getElementById("login_status").innerText = "Вход выполнен!";
-        document.getElementById("main").style.display = "block";
-    } else {
-        document.getElementById("login_status").innerText = "Ошибка входа.";
-    }
-}
-
-async function check() {
-    const text = document.getElementById("nicknames").value.trim();
-    const nicknames = text.split("\n").map(n => n.trim()).filter(n => n !== "");
-
-    const res = await fetch("/check", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-        },
-        body: JSON.stringify({ nicknames })
-    });
-
-    const data = await res.json();
-    const resultsDiv = document.getElementById("results");
-    resultsDiv.innerHTML = "";
-    for (const item of data.results) {
-        const p = document.createElement("p");
-        p.textContent = `${item.nickname}: ${item.status}`;
-        resultsDiv.appendChild(p);
-    }
-}
-
-async function loadHistory() {
-    const res = await fetch("/history", {
-        headers: { "Authorization": "Bearer " + token }
-    });
-    const data = await res.json();
-    const list = document.getElementById("history");
-    list.innerHTML = "";
-    for (const nick of data) {
-        const li = document.createElement("li");
-        li.textContent = nick;
-        list.appendChild(li);
-    }
-}
-</script>
 </body>
 </html>
-
