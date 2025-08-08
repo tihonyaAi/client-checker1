@@ -22,7 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === Шаблоны ===
+# === HTML шаблоны ===
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
@@ -35,16 +35,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
-# === Пользователи ===
+# === База пользователей ===
 fake_users = {
     "admin": {
         "username": "admin",
         "hashed_password": pwd_context.hash("password"),
-        "history": []
-    },
-    "test": {
-        "username": "test",
-        "hashed_password": pwd_context.hash("12345"),
         "history": []
     },
     "admin1": {
@@ -54,8 +49,8 @@ fake_users = {
     }
 }
 
-# === Глобальная база использованных никнеймов ===
-used_nicknames = set()
+# === Глобальная база занятых ников ===
+taken_nicks = set()
 
 # === Утилиты ===
 def verify_password(plain_password, hashed_password):
@@ -103,29 +98,24 @@ class NicknameRequest(BaseModel):
 def check_nicknames(data: NicknameRequest, user=Depends(get_current_user)):
     results = []
     for nick in data.nicknames:
-        normalized = nick.lower().strip()
-
-        if normalized in used_nicknames:
+        if nick in taken_nicks:
             status = "Ник занят"
-        elif normalized.startswith("test"):
-            status = "Найдено"
-            used_nicknames.add(normalized)
         else:
             status = "Не найдено"
-            used_nicknames.add(normalized)
-
-        results.append({"nickname": nick, "status": status})
-
-        # Запись в историю пользователя
-        user["history"].append({
+            taken_nicks.add(nick)
+        entry = {
             "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "nickname": nick,
             "status": status
-        })
-
+        }
+        user["history"].append(entry)
+        results.append({"nickname": nick, "status": status})
     return {"results": results}
 
 @app.get("/history")
 def get_history(user=Depends(get_current_user)):
-    # История только конкретного пользователя, отсортированная по времени
-    return sorted(user["history"], key=lambda x: x["time"], reverse=True)
+    # Отдаём строки, чтобы не было [object Object]
+    return [
+        f"{item['time']} — {item['nickname']} — {item['status']}"
+        for item in sorted(user["history"], key=lambda x: x["time"], reverse=True)
+    ]
