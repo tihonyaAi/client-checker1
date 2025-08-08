@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, Depends, HTTPException
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,6 +40,11 @@ fake_users = {
     "admin": {
         "username": "admin",
         "hashed_password": pwd_context.hash("password"),
+        "history": []
+    },
+    "test": {
+        "username": "test",
+        "hashed_password": pwd_context.hash("12345"),
         "history": []
     }
 }
