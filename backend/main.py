@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -10,10 +10,8 @@ from pydantic import BaseModel
 import jwt
 import os
 
-# === Создание приложения ===
 app = FastAPI()
 
-# === Разрешаем CORS (на всякий случай) ===
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,29 +20,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === Шаблоны HTML ===
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-# === Настройки JWT ===
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# === Работа с паролями ===
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
-# === Имитация базы пользователей ===
-fake_users = {
-    "admin": {
-        "username": "admin",
-        "hashed_password": pwd_context.hash("password"),
-        "history": []
-    }
-}
+# Изначально пустая база пользователей
+fake_users = {}
 
-# === Утилиты ===
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -69,11 +57,25 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-# === Роуты ===
-
 @app.get("/", response_class=HTMLResponse)
 def get_home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+# Новый эндпоинт для проверки и добавления пользователя
+@app.post("/check_username")
+async def check_username(data: dict):
+    username = data.get("username")
+    if not username:
+        raise HTTPException(status_code=400, detail="Username required")
+    if username in fake_users:
+        raise HTTPException(status_code=400, detail="Ник занят")
+    # Добавляем пользователя с паролем по умолчанию 'default_password'
+    fake_users[username] = {
+        "username": username,
+        "hashed_password": pwd_context.hash("default_password"),
+        "history": []
+    }
+    return {"message": "Пользователь создан"}
 
 @app.post("/token")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
