@@ -115,10 +115,17 @@ def check_nicknames(data: NicknameRequest, user=Depends(get_current_user)):
             used_nicknames.add(normalized)
 
         results.append({"nickname": nick, "status": status})
-        user["history"].append({"nickname": nick, "status": status})
+
+        # Запись в историю пользователя
+        user["history"].append({
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "nickname": nick,
+            "status": status
+        })
 
     return {"results": results}
 
 @app.get("/history")
 def get_history(user=Depends(get_current_user)):
-    return user["history"]
+    # История только конкретного пользователя, отсортированная по времени
+    return sorted(user["history"], key=lambda x: x["time"], reverse=True)
