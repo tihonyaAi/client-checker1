@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AurumTrade — Вход</title>
+    <title>AurumTrade</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1cb5e0, #000851); /* Бирюзово-синий градиент */
+            background: linear-gradient(135deg, #1cb5e0, #000851);
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -22,12 +22,12 @@
             margin-bottom: 30px;
             letter-spacing: 1px;
         }
-        .login-box {
+        .box {
             background: rgba(255, 255, 255, 0.1);
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-            width: 300px;
+            width: 320px;
             text-align: center;
             backdrop-filter: blur(8px);
         }
@@ -50,16 +50,31 @@
             font-size: 1.1rem;
             cursor: pointer;
             transition: background 0.3s ease;
+            margin-top: 5px;
         }
         button:hover {
             background-color: #00aacc;
+        }
+        .hidden {
+            display: none;
+        }
+        .history-box {
+            text-align: left;
+            margin-top: 10px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
         }
     </style>
 </head>
 <body>
 
     <h1>AurumTrade</h1>
-    <div class="login-box">
+
+    <!-- Форма входа -->
+    <div id="loginBox" class="box">
         <form id="loginForm">
             <input type="text" id="username" placeholder="Логин" required>
             <input type="password" id="password" placeholder="Пароль" required>
@@ -67,7 +82,19 @@
         </form>
     </div>
 
+    <!-- Рабочая панель -->
+    <div id="mainBox" class="box hidden">
+        <input type="text" id="nickname" placeholder="Введите ник">
+        <button id="checkBtn">Проверить</button>
+        <button id="historyBtn">Посмотреть историю</button>
+        <div id="history" class="history-box hidden"></div>
+    </div>
+
     <script>
+        const loginBox = document.getElementById("loginBox");
+        const mainBox = document.getElementById("mainBox");
+        const historyBox = document.getElementById("history");
+
         document.getElementById("loginForm").addEventListener("submit", async function(e) {
             e.preventDefault();
             const username = document.getElementById("username").value;
@@ -75,19 +102,58 @@
 
             const res = await fetch("/token", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
             });
 
             if (res.ok) {
                 const data = await res.json();
                 localStorage.setItem("token", data.access_token);
-                alert("Успешный вход!");
-                // Здесь можно сделать редирект на главную страницу системы
+
+                loginBox.classList.add("hidden");
+                mainBox.classList.remove("hidden");
             } else {
                 alert("Неверный логин или пароль");
+            }
+        });
+
+        document.getElementById("checkBtn").addEventListener("click", async () => {
+            const nickname = document.getElementById("nickname").value.trim();
+            if (!nickname) return alert("Введите ник");
+
+            const token = localStorage.getItem("token");
+
+            const res = await fetch("/check", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ nicknames: [nickname] })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                alert(`${nickname}: ${data.results[0].status}`);
+                document.getElementById("nickname").value = "";
+            } else {
+                alert("Ошибка при проверке ника");
+            }
+        });
+
+        document.getElementById("historyBtn").addEventListener("click", async () => {
+            const token = localStorage.getItem("token");
+
+            const res = await fetch("/history", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                historyBox.innerHTML = data.map(item => `<div>${item}</div>`).join("");
+                historyBox.classList.remove("hidden");
+            } else {
+                alert("Ошибка при получении истории");
             }
         });
     </script>
