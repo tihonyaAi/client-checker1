@@ -67,9 +67,34 @@
             max-height: 150px;
             overflow-y: auto;
         }
+        /* Стиль уведомлений */
+        #notification {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            display: none;
+            z-index: 999;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @keyframes fadein {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes fadeout {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
     </style>
 </head>
 <body>
+
+    <div id="notification"></div>
 
     <h1>AurumTrade</h1>
 
@@ -94,6 +119,15 @@
         const loginBox = document.getElementById("loginBox");
         const mainBox = document.getElementById("mainBox");
         const historyBox = document.getElementById("history");
+        const notification = document.getElementById("notification");
+
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.style.display = "block";
+            setTimeout(() => {
+                notification.style.display = "none";
+            }, 3000);
+        }
 
         document.getElementById("loginForm").addEventListener("submit", async function(e) {
             e.preventDefault();
@@ -112,14 +146,15 @@
 
                 loginBox.classList.add("hidden");
                 mainBox.classList.remove("hidden");
+                showNotification("✅ Успешный вход");
             } else {
-                alert("Неверный логин или пароль");
+                showNotification("❌ Неверный логин или пароль");
             }
         });
 
         document.getElementById("checkBtn").addEventListener("click", async () => {
             const nickname = document.getElementById("nickname").value.trim();
-            if (!nickname) return alert("Введите ник");
+            if (!nickname) return showNotification("⚠ Введите ник");
 
             const token = localStorage.getItem("token");
 
@@ -134,10 +169,10 @@
 
             if (res.ok) {
                 const data = await res.json();
-                alert(`${nickname}: ${data.results[0].status}`);
+                showNotification(`${nickname}: ${data.results[0].status}`);
                 document.getElementById("nickname").value = "";
             } else {
-                alert("Ошибка при проверке ника");
+                showNotification("❌ Ошибка при проверке ника");
             }
         });
 
@@ -153,7 +188,7 @@
                 historyBox.innerHTML = data.map(item => `<div>${item}</div>`).join("");
                 historyBox.classList.remove("hidden");
             } else {
-                alert("Ошибка при получении истории");
+                showNotification("❌ Ошибка при получении истории");
             }
         });
     </script>
