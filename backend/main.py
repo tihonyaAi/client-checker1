@@ -46,6 +46,11 @@ fake_users = {
         "username": "test",
         "hashed_password": pwd_context.hash("12345"),
         "history": []
+    },
+    "admin1": {
+        "username": "admin1",
+        "hashed_password": pwd_context.hash("12345"),
+        "history": []
     }
 }
 
