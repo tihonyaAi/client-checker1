@@ -13,7 +13,7 @@ import os
 # === Создание приложения ===
 app = FastAPI()
 
-# === Разрешаем CORS (на всякий случай) ===
+# === CORS ===
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,20 +22,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === Шаблоны HTML ===
+# === Шаблоны ===
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-# === Настройки JWT ===
+# === JWT настройки ===
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# === Работа с паролями ===
+# === Пароли ===
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
-# === Имитация базы пользователей ===
+# === Пользователи ===
 fake_users = {
     "admin": {
         "username": "admin",
@@ -53,6 +53,9 @@ fake_users = {
         "history": []
     }
 }
+
+# === Глобальная база использованных никнеймов ===
+used_nicknames = set()
 
 # === Утилиты ===
 def verify_password(plain_password, hashed_password):
@@ -100,12 +103,20 @@ class NicknameRequest(BaseModel):
 def check_nicknames(data: NicknameRequest, user=Depends(get_current_user)):
     results = []
     for nick in data.nicknames:
-        if nick.lower().startswith("test"):
+        normalized = nick.lower().strip()
+
+        if normalized in used_nicknames:
+            status = "Ник занят"
+        elif normalized.startswith("test"):
             status = "Найдено"
+            used_nicknames.add(normalized)
         else:
             status = "Не найдено"
+            used_nicknames.add(normalized)
+
         results.append({"nickname": nick, "status": status})
-        user["history"].append(nick)
+        user["history"].append({"nickname": nick, "status": status})
+
     return {"results": results}
 
 @app.get("/history")
