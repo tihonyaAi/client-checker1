@@ -11,30 +11,6 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* Уведомления */
-        #notification {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.85);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 1rem;
-            display: none;
-            z-index: 999;
-            animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        }
-        @keyframes fadein {
-            from { opacity: 0; transform: translate(-50%, -20px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        @keyframes fadeout {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-
         /* Экран входа */
         .login-screen {
             height: 100vh;
@@ -97,6 +73,16 @@
             justify-content: center;
             align-items: center;
         }
+        .status-message {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-icon {
+            font-size: 1.6rem;
+        }
         .nickname-input {
             width: 60%;
             padding: 15px;
@@ -148,8 +134,6 @@
 </head>
 <body>
 
-<div id="notification"></div>
-
 <!-- Экран входа -->
 <div id="loginScreen" class="login-screen">
     <h1>AurumTrade</h1>
@@ -166,6 +150,7 @@
 <div id="workScreen" class="work-screen" style="display:none;">
     <div class="header">AurumTrade</div>
     <div class="main-area">
+        <div id="statusMessage" class="status-message"></div>
         <input type="text" id="nickname" class="nickname-input" placeholder="Введите ник">
         <div class="buttons">
             <button id="checkBtn" class="btn btn-check">Проверить</button>
@@ -176,15 +161,17 @@
 </div>
 
 <script>
-    const notification = document.getElementById("notification");
     const loginScreen = document.getElementById("loginScreen");
     const workScreen = document.getElementById("workScreen");
     const historyBox = document.getElementById("history");
+    const statusMessage = document.getElementById("statusMessage");
 
-    function showNotification(message) {
-        notification.textContent = message;
-        notification.style.display = "block";
-        setTimeout(() => notification.style.display = "none", 3000);
+    function setStatusMessage(nickname, status) {
+        if (status.includes("Ник занят")) {
+            statusMessage.innerHTML = `<span class="status-icon" style="color:red;">❌</span><span style="color:red;">${nickname}: ${status}</span>`;
+        } else {
+            statusMessage.innerHTML = `<span class="status-icon" style="color:limegreen;">✅</span><span style="color:limegreen;">${nickname}: ${status}</span>`;
+        }
     }
 
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
@@ -203,15 +190,14 @@
             localStorage.setItem("token", data.access_token);
             loginScreen.style.display = "none";
             workScreen.style.display = "flex";
-            showNotification("✅ Успешный вход");
         } else {
-            showNotification("❌ Неверный логин или пароль");
+            alert("❌ Неверный логин или пароль");
         }
     });
 
     document.getElementById("checkBtn").addEventListener("click", async () => {
         const nickname = document.getElementById("nickname").value.trim();
-        if (!nickname) return showNotification("⚠ Введите ник");
+        if (!nickname) return;
 
         const token = localStorage.getItem("token");
         const res = await fetch("/check", {
@@ -222,10 +208,10 @@
 
         if (res.ok) {
             const data = await res.json();
-            showNotification(`${nickname}: ${data.results[0].status}`);
+            setStatusMessage(nickname, data.results[0].status);
             document.getElementById("nickname").value = "";
         } else {
-            showNotification("❌ Ошибка при проверке ника");
+            alert("❌ Ошибка при проверке ника");
         }
     });
 
@@ -248,7 +234,7 @@
                 .join("");
             historyBox.style.display = "block";
         } else {
-            showNotification("❌ Ошибка при получении истории");
+            alert("❌ Ошибка при получении истории");
         }
     });
 </script>
