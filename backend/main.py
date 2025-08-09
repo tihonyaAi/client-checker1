@@ -39,7 +39,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 fake_users = {
     "admin": {
         "username": "admin",
-        "hashed_password": pwd_context.hash("password"),
+        "hashed_password": pwd_context.hash("1535"),
         "history": []
     },
     "admin1": {
@@ -51,6 +51,9 @@ fake_users = {
 
 # === Глобальная база занятых ников ===
 taken_nicks = set()
+
+# === Глобальная история по всем пользователям ===
+global_history = []
 
 # === Утилиты ===
 def verify_password(plain_password, hashed_password):
@@ -106,16 +109,26 @@ def check_nicknames(data: NicknameRequest, user=Depends(get_current_user)):
         entry = {
             "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "nickname": nick,
-            "status": status
+            "status": status,
+            "user": user["username"]
         }
         user["history"].append(entry)
+        global_history.append(entry)
         results.append({"nickname": nick, "status": status})
     return {"results": results}
 
 @app.get("/history")
 def get_history(user=Depends(get_current_user)):
-    # Отдаём строки, чтобы не было [object Object]
-    return [
-        f"{item['time']} — {item['nickname']} — {item['status']}"
-        for item in sorted(user["history"], key=lambda x: x["time"], reverse=True)
-    ]
+    if user["username"] == "admin":
+        # Вернуть всю глобальную историю для admin
+        sorted_history = sorted(global_history, key=lambda x: x["time"], reverse=True)
+        return [
+            f"{item['time']} — {item['user']} — {item['nickname']} — {item['status']}"
+            for item in sorted_history
+        ]
+    else:
+        # Только личную историю для остальных
+        return [
+            f"{item['time']} — {item['nickname']} — {item['status']}"
+            for item in sorted(user["history"], key=lambda x: x["time"], reverse=True)
+        ]
