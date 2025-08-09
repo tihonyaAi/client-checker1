@@ -11,7 +11,6 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* Уведомления */
         #notification {
             position: fixed;
             top: 10px;
@@ -24,18 +23,8 @@
             font-size: 1rem;
             display: none;
             z-index: 999;
-            animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        }
-        @keyframes fadein {
-            from { opacity: 0; transform: translate(-50%, -20px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        @keyframes fadeout {
-            from { opacity: 1; }
-            to { opacity: 0; }
         }
 
-        /* Экран входа */
         .login-screen {
             height: 100vh;
             background: linear-gradient(135deg, #1cb5e0, #000851);
@@ -71,13 +60,8 @@
             border-radius: 8px;
             font-size: 1.1rem;
             cursor: pointer;
-            margin-top: 5px;
-        }
-        .login-box button:hover {
-            background-color: #00aacc;
         }
 
-        /* Рабочая зона */
         .work-screen {
             height: 100vh;
             background-color: #0b0e11;
@@ -98,7 +82,6 @@
             align-items: center;
         }
 
-        /* Блок статуса */
         #statusBox {
             margin-bottom: 10px;
             font-size: 1.2rem;
@@ -138,16 +121,10 @@
             background-color: #f0b90b;
             color: #0b0e11;
         }
-        .btn-check:hover {
-            background-color: #d9a308;
-        }
         .btn-history {
             background-color: #1e2329;
             color: #f0b90b;
             border: 1px solid #f0b90b;
-        }
-        .btn-history:hover {
-            background-color: #2a2f35;
         }
         .history-box {
             margin-top: 20px;
@@ -165,7 +142,6 @@
 
 <div id="notification"></div>
 
-<!-- Экран входа -->
 <div id="loginScreen" class="login-screen">
     <h1>AurumTrade</h1>
     <div class="login-box">
@@ -177,13 +153,10 @@
     </div>
 </div>
 
-<!-- Рабочая зона -->
 <div id="workScreen" class="work-screen" style="display:none;">
     <div class="header">AurumTrade</div>
     <div class="main-area">
-        <!-- Блок статуса -->
         <div id="statusBox"></div>
-
         <input type="text" id="nickname" class="nickname-input" placeholder="Введите ник">
         <div class="buttons">
             <button id="checkBtn" class="btn btn-check">Проверить</button>
@@ -207,7 +180,6 @@
         setTimeout(() => notification.style.display = "none", 3000);
     }
 
-    // Очистка статуса при изменении ника
     nicknameInput.addEventListener("input", () => {
         statusBox.style.display = "none";
     });
@@ -249,8 +221,8 @@
             const data = await res.json();
             const status = data.results[0].status;
 
-            if (status === "Найдено") {
-                statusBox.innerHTML = `❌ <span class="status-bad">Ник занят</span>`;
+            if (status === "Ник занят") {
+                statusBox.innerHTML = `❌ <span class="status-bad">${status}</span>`;
             } else {
                 statusBox.innerHTML = `✅ <span class="status-ok">Ник свободен</span>`;
             }
