@@ -11,6 +11,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        /* Уведомления */
         #notification {
             position: fixed;
             top: 10px;
@@ -23,8 +24,18 @@
             font-size: 1rem;
             display: none;
             z-index: 999;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @keyframes fadein {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes fadeout {
+            from { opacity: 1; }
+            to { opacity: 0; }
         }
 
+        /* Экран входа */
         .login-screen {
             height: 100vh;
             background: linear-gradient(135deg, #1cb5e0, #000851);
@@ -60,8 +71,13 @@
             border-radius: 8px;
             font-size: 1.1rem;
             cursor: pointer;
+            margin-top: 5px;
+        }
+        .login-box button:hover {
+            background-color: #00aacc;
         }
 
+        /* Рабочая зона */
         .work-screen {
             height: 100vh;
             background-color: #0b0e11;
@@ -81,20 +97,6 @@
             justify-content: center;
             align-items: center;
         }
-
-        #statusBox {
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-            display: none;
-            text-align: center;
-        }
-        .status-ok {
-            color: #4caf50;
-        }
-        .status-bad {
-            color: #f44336;
-        }
-
         .nickname-input {
             width: 60%;
             padding: 15px;
@@ -121,10 +123,16 @@
             background-color: #f0b90b;
             color: #0b0e11;
         }
+        .btn-check:hover {
+            background-color: #d9a308;
+        }
         .btn-history {
             background-color: #1e2329;
             color: #f0b90b;
             border: 1px solid #f0b90b;
+        }
+        .btn-history:hover {
+            background-color: #2a2f35;
         }
         .history-box {
             margin-top: 20px;
@@ -142,6 +150,7 @@
 
 <div id="notification"></div>
 
+<!-- Экран входа -->
 <div id="loginScreen" class="login-screen">
     <h1>AurumTrade</h1>
     <div class="login-box">
@@ -153,10 +162,10 @@
     </div>
 </div>
 
+<!-- Рабочая зона -->
 <div id="workScreen" class="work-screen" style="display:none;">
     <div class="header">AurumTrade</div>
     <div class="main-area">
-        <div id="statusBox"></div>
         <input type="text" id="nickname" class="nickname-input" placeholder="Введите ник">
         <div class="buttons">
             <button id="checkBtn" class="btn btn-check">Проверить</button>
@@ -171,18 +180,12 @@
     const loginScreen = document.getElementById("loginScreen");
     const workScreen = document.getElementById("workScreen");
     const historyBox = document.getElementById("history");
-    const statusBox = document.getElementById("statusBox");
-    const nicknameInput = document.getElementById("nickname");
 
     function showNotification(message) {
         notification.textContent = message;
         notification.style.display = "block";
         setTimeout(() => notification.style.display = "none", 3000);
     }
-
-    nicknameInput.addEventListener("input", () => {
-        statusBox.style.display = "none";
-    });
 
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
         e.preventDefault();
@@ -207,7 +210,7 @@
     });
 
     document.getElementById("checkBtn").addEventListener("click", async () => {
-        const nickname = nicknameInput.value.trim();
+        const nickname = document.getElementById("nickname").value.trim();
         if (!nickname) return showNotification("⚠ Введите ник");
 
         const token = localStorage.getItem("token");
@@ -219,14 +222,8 @@
 
         if (res.ok) {
             const data = await res.json();
-            const status = data.results[0].status;
-
-            if (status === "Ник занят") {
-                statusBox.innerHTML = `❌ <span class="status-bad">${status}</span>`;
-            } else {
-                statusBox.innerHTML = `✅ <span class="status-ok">Ник свободен</span>`;
-            }
-            statusBox.style.display = "block";
+            showNotification(`${nickname}: ${data.results[0].status}`);
+            document.getElementById("nickname").value = "";
         } else {
             showNotification("❌ Ошибка при проверке ника");
         }
@@ -238,7 +235,17 @@
 
         if (res.ok) {
             const data = await res.json();
-            historyBox.innerHTML = data.map(item => `<div>${item}</div>`).join("");
+            historyBox.innerHTML = data
+                .map(item => {
+                    let color = "";
+                    if (item.includes("Ник занят")) {
+                        color = "red";
+                    } else if (item.includes("Не найдено")) {
+                        color = "limegreen";
+                    }
+                    return `<div style="color:${color};">${item}</div>`;
+                })
+                .join("");
             historyBox.style.display = "block";
         } else {
             showNotification("❌ Ошибка при получении истории");
