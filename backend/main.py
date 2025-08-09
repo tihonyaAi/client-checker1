@@ -1,175 +1,134 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AurumTrade - Проверка ников</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0b0e11;
-            color: #f0b90b;
-            margin: 0;
-            padding: 20px;
+from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from passlib.context import CryptContext
+from typing import List
+from datetime import datetime, timedelta
+from pydantic import BaseModel
+import jwt
+import os
+
+# === Создание приложения ===
+app = FastAPI()
+
+# === CORS ===
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# === HTML шаблоны ===
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# === JWT настройки ===
+SECRET_KEY = "your_secret_key"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# === Пароли ===
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+
+# === База пользователей ===
+fake_users = {
+    "admin": {
+        "username": "admin",
+        "hashed_password": pwd_context.hash("1535"),
+        "history": []
+    },
+    "admin1": {
+        "username": "admin1",
+        "hashed_password": pwd_context.hash("12345"),
+        "history": []
+    }
+}
+
+# === Глобальная база занятых ников ===
+taken_nicks = set()
+
+# === Глобальная история по всем пользователям ===
+global_history = []
+
+# === Утилиты ===
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def authenticate_user(username: str, password: str):
+    user = fake_users.get(username)
+    if user and verify_password(password, user["hashed_password"]):
+        return user
+    return None
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    to_encode["exp"] = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username not in fake_users:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        return fake_users[username]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+# === Роуты ===
+
+@app.get("/", response_class=HTMLResponse)
+def get_home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.post("/token")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Неверный логин или пароль")
+    access_token = create_access_token(data={"sub": form_data.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+class NicknameRequest(BaseModel):
+    nicknames: List[str]
+
+@app.post("/check")
+def check_nicknames(data: NicknameRequest, user=Depends(get_current_user)):
+    results = []
+    for nick in data.nicknames:
+        if nick in taken_nicks:
+            status = "Ник занят"
+        else:
+            status = "Не найдено"
+            taken_nicks.add(nick)
+        entry = {
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "nickname": nick,
+            "status": status,
+            "user": user["username"]
         }
-        #message {
-            margin-bottom: 10px;
-            font-size: 1rem;
-            min-height: 24px;
-        }
-        #nickname-input {
-            width: 300px;
-            padding: 10px;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            border: 1px solid #f0b90b;
-            background-color: #1e2329;
-            color: white;
-            outline: none;
-        }
-        #check-btn {
-            padding: 10px 20px;
-            margin-left: 10px;
-            font-size: 1.2rem;
-            background-color: #f0b90b;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            color: #0b0e11;
-        }
-        #check-btn:hover {
-            background-color: #d9a308;
-        }
-        #history-list {
-            margin-top: 20px;
-            max-width: 500px;
-            list-style: none;
-            padding: 0;
-            max-height: 300px;
-            overflow-y: auto;
-            background-color: #1e2329;
-            border-radius: 8px;
-            padding: 15px;
-        }
-        #history-list li {
-            padding: 5px 0;
-            border-bottom: 1px solid #2a2f35;
-        }
-        #history-list li.green {
-            color: #4CAF50; /* зеленый */
-        }
-        #history-list li.red {
-            color: #f44336; /* красный */
-        }
-    </style>
-</head>
-<body>
-    <h1>AurumTrade - Проверка ников</h1>
+        user["history"].append(entry)
+        global_history.append(entry)
+        results.append({"nickname": nick, "status": status})
+    return {"results": results}
 
-    <div id="message"></div>
-
-    <input id="nickname-input" type="text" placeholder="Введите ник" autocomplete="off" />
-    <button id="check-btn">Проверить</button>
-
-    <ul id="history-list"></ul>
-
-    <script>
-        const input = document.getElementById("nickname-input");
-        const btn = document.getElementById("check-btn");
-        const message = document.getElementById("message");
-        const historyList = document.getElementById("history-list");
-
-        // Получаем токен из localStorage (получен при логине)
-        const token = localStorage.getItem("token");
-
-        async function checkNicknames() {
-            const nick = input.value.trim();
-            if (!nick) {
-                message.textContent = "⚠ Введите ник";
-                return;
-            }
-            message.textContent = "";
-
-            try {
-                const res = await fetch("/check", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ nicknames: [nick] })
-                });
-
-                if (!res.ok) throw new Error("Ошибка при проверке ника");
-
-                const data = await res.json();
-                // Показать статус над вводом
-                const status = data.results[0].status;
-                if (status === "Не найдено") {
-                    message.style.color = "#4CAF50";
-                    message.textContent = `✅ Ник "${nick}" свободен`;
-                } else {
-                    message.style.color = "#f44336";
-                    message.textContent = `❌ Ник "${nick}" занят`;
-                }
-
-                input.value = "";
-                await loadHistory();
-            } catch (err) {
-                message.style.color = "red";
-                message.textContent = "Ошибка: " + err.message;
-            }
-        }
-
-        async function loadHistory() {
-            try {
-                const res = await fetch("/history", {
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
-                });
-                if (!res.ok) throw new Error("Ошибка при загрузке истории");
-
-                const data = await res.json();
-
-                historyList.innerHTML = "";
-                data.forEach(item => {
-                    const li = document.createElement("li");
-                    li.textContent = item;
-
-                    if (item.includes("Не найдено")) {
-                        li.classList.add("green");
-                    } else if (item.includes("Ник занят")) {
-                        li.classList.add("red");
-                    }
-
-                    historyList.appendChild(li);
-                });
-            } catch (err) {
-                message.style.color = "red";
-                message.textContent = "Ошибка: " + err.message;
-            }
-        }
-
-        btn.addEventListener("click", () => {
-            checkNicknames();
-        });
-
-        input.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                checkNicknames();
-            }
-        });
-
-        window.onload = () => {
-            if (!token) {
-                message.style.color = "red";
-                message.textContent = "❌ Токен не найден. Пожалуйста, войдите.";
-                return;
-            }
-            loadHistory();
-        };
-    </script>
-</body>
-</html>
+@app.get("/history")
+def get_history(user=Depends(get_current_user)):
+    if user["username"] == "admin":
+        # Вернуть всю глобальную историю для admin
+        sorted_history = sorted(global_history, key=lambda x: x["time"], reverse=True)
+        return [
+            f"{item['time']} — {item['user']} — {item['nickname']} — {item['status']}"
+            for item in sorted_history
+        ]
+    else:
+        # Только личную историю для остальных
+        return [
+            f"{item['time']} — {item['nickname']} — {item['status']}"
+            for item in sorted(user["history"], key=lambda x: x["time"], reverse=True)
+        ]
