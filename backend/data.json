@@ -1,5 +1,8 @@
 {
-  "users": {},
-  "taken_nicks": []
+  "users": {
+    "W1499CR": "G12793",
+    "admin": "adminpass"
+  },
+  "taken_nicks": [],
+  "history": {}
 }
-
