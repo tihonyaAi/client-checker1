@@ -1,243 +1,254 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AurumTrade</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AurumTrade</title>
+  <style>
+    :root {
+      --bg: #0b0e11;
+      --panel: #1e2329;
+      --accent: #f0b90b;
+      --accent-dark: #d9a308;
+      --text: #ffffff;
+      --good: #4caf50;
+      --bad: #f44336;
+    }
+    html,body { height:100%; margin:0; font-family: "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--accent); }
 
-        /* Экран входа */
-        .login-screen {
-            height: 100vh;
-            background: linear-gradient(135deg, #1cb5e0, #000851);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
-        }
-        .login-box {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 15px;
-            width: 320px;
-            text-align: center;
-            backdrop-filter: blur(8px);
-        }
-        .login-box input {
-            width: 90%;
-            padding: 12px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 8px;
-            outline: none;
-            font-size: 1rem;
-        }
-        .login-box button {
-            width: 95%;
-            padding: 12px;
-            background-color: #00d4ff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            margin-top: 5px;
-        }
-        .login-box button:hover {
-            background-color: #00aacc;
-        }
-
-        /* Рабочая зона */
-        .work-screen {
-            height: 100vh;
-            background-color: #0b0e11;
-            color: #f0b90b;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-        .header {
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        .main-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .status-message {
-            font-size: 1.4rem;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .status-icon {
-            font-size: 1.6rem;
-        }
-        .nickname-input {
-            width: 60%;
-            padding: 15px;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            border: 1px solid #f0b90b;
-            outline: none;
-            background-color: #1e2329;
-            color: white;
-        }
-        .buttons {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-        .btn {
-            padding: 12px 20px;
-            font-size: 1.1rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .btn-check {
-            background-color: #f0b90b;
-            color: #0b0e11;
-        }
-        .btn-check:hover {
-            background-color: #d9a308;
-        }
-        .btn-history {
-            background-color: #1e2329;
-            color: #f0b90b;
-            border: 1px solid #f0b90b;
-        }
-        .btn-history:hover {
-            background-color: #2a2f35;
-        }
-        .history-box {
-            margin-top: 20px;
-            background-color: #1e2329;
-            padding: 15px;
-            border-radius: 8px;
-            max-width: 60%;
-            width: 100%;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-    </style>
-</head>
-<body>
-
-<!-- Экран входа -->
-<div id="loginScreen" class="login-screen">
-    <h1>AurumTrade</h1>
-    <div class="login-box">
-        <form id="loginForm">
-            <input type="text" id="username" placeholder="Логин" required>
-            <input type="password" id="password" placeholder="Пароль" required>
-            <button type="submit">Войти</button>
-        </form>
-    </div>
-</div>
-
-<!-- Рабочая зона -->
-<div id="workScreen" class="work-screen" style="display:none;">
-    <div class="header">AurumTrade</div>
-    <div class="main-area">
-        <div id="statusMessage" class="status-message"></div>
-        <input type="text" id="nickname" class="nickname-input" placeholder="Введите ник">
-        <div class="buttons">
-            <button id="checkBtn" class="btn btn-check">Проверить</button>
-            <button id="historyBtn" class="btn btn-history">История</button>
-        </div>
-        <div id="history" class="history-box" style="display:none;"></div>
-    </div>
-</div>
-
-<script>
-    const loginScreen = document.getElementById("loginScreen");
-    const workScreen = document.getElementById("workScreen");
-    const historyBox = document.getElementById("history");
-    const statusMessage = document.getElementById("statusMessage");
-
-    function setStatusMessage(nickname, status) {
-        if (status.includes("Ник занят")) {
-            statusMessage.innerHTML = `<span class="status-icon" style="color:red;">❌</span><span style="color:red;">${nickname}: ${status}</span>`;
-        } else {
-            statusMessage.innerHTML = `<span class="status-icon" style="color:limegreen;">✅</span><span style="color:limegreen;">${nickname}: ${status}</span>`;
-        }
+    /* верхний маленький логотип слева */
+    .brand {
+      position: absolute; left:16px; top:12px; font-weight:700; color:var(--accent); font-size:14px;
     }
 
-    document.getElementById("loginForm").addEventListener("submit", async function(e) {
-        e.preventDefault();
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
+    /* общий контейнер центр */
+    .center {
+      height:100vh; display:flex; align-items:center; justify-content:center;
+    }
 
-        const res = await fetch("/token", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-        });
+    /* форма логина */
+    .login-box {
+      width:360px; background:var(--panel); border:1px solid var(--accent); padding:28px; border-radius:12px; box-shadow:0 6px 30px rgba(0,0,0,0.6);
+    }
+    .login-box h2 { margin:0 0 14px 0; color:var(--accent); font-size:22px; text-align:center; }
+    .login-box input {
+      width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid var(--accent); background:#0f1113; color:#fff; font-size:15px;
+      outline:none;
+    }
+    .login-box input:focus { box-shadow:0 0 8px rgba(240,185,11,0.12); border-color:var(--accent-dark); }
+    .login-box button {
+      width:100%; padding:12px; margin-top:8px; border-radius:8px; border:none; background:var(--accent); color:#0b0e11; font-weight:700; cursor:pointer;
+    }
+    .login-box button:hover { background:var(--accent-dark); }
 
-        if (res.ok) {
-            const data = await res.json();
-            localStorage.setItem("token", data.access_token);
-            loginScreen.style.display = "none";
-            workScreen.style.display = "flex";
+    /* рабочая зона */
+    .work {
+      display:none; padding:28px; width:100%; max-width:900px; margin:24px auto; box-sizing:border-box;
+    }
+    .work .panel {
+      background:var(--panel); border:1px solid var(--accent); padding:18px; border-radius:10px;
+    }
+    .status {
+      min-height:36px; margin-bottom:12px; font-size:18px; display:flex; align-items:center; gap:10px;
+    }
+    .nickname {
+      width:100%; padding:12px; border-radius:8px; border:1px solid var(--accent); background:#0f1113; color:#fff; font-size:16px;
+    }
+    .controls { margin-top:12px; display:flex; gap:10px; }
+    .btn { padding:10px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
+    .btn-check { background:var(--accent); color:#0b0e11; }
+    .btn-history { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+
+    .history { margin-top:12px; max-height:260px; overflow:auto; padding:10px; background:#0f1113; border-radius:8px; border:1px solid #222; color:#ddd; }
+    .history .row { padding:6px 4px; border-bottom:1px solid #151719; font-size:13px; }
+    .history .free { color:var(--good); }
+    .history .taken { color:var(--bad); }
+
+    /* simple responsive */
+    @media (max-width:720px){
+      .login-box { width:92%; }
+      .work { padding:14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="brand">AurumTrade</div>
+
+  <!-- LOGIN -->
+  <div class="center" id="loginScreen">
+    <div class="login-box" role="form" aria-label="login">
+      <h2>Вход</h2>
+      <form id="loginForm">
+        <input id="username" name="username" type="text" placeholder="Логин" autocomplete="username" required />
+        <input id="password" name="password" type="password" placeholder="Пароль" autocomplete="current-password" required />
+        <button type="submit">Войти</button>
+      </form>
+      <div id="loginError" style="color:#f44336;margin-top:10px;display:none;"></div>
+    </div>
+  </div>
+
+  <!-- WORK -->
+  <div class="work" id="work" aria-hidden="true">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-weight:700;color:var(--accent)">AurumTrade</div>
+        <div id="who" style="font-size:13px;color:#ccc"></div>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <input id="nickInput" class="nickname" placeholder="Введите ник и нажмите Enter или Проверить" autocomplete="off" />
+
+      <div class="controls">
+        <button id="checkBtn" class="btn btn-check">Проверить</button>
+        <button id="historyBtn" class="btn btn-history">История</button>
+      </div>
+
+      <div id="history" class="history" style="display:none;margin-top:12px;"></div>
+    </div>
+  </div>
+
+<script>
+  const loginScreen = document.getElementById('loginScreen');
+  const loginForm = document.getElementById('loginForm');
+  const loginError = document.getElementById('loginError');
+
+  const work = document.getElementById('work');
+  const who = document.getElementById('who');
+  const statusEl = document.getElementById('status');
+  const nickInput = document.getElementById('nickInput');
+  const checkBtn = document.getElementById('checkBtn');
+  const historyBtn = document.getElementById('historyBtn');
+  const historyBox = document.getElementById('history');
+
+  // Вход — сохраняем токен в localStorage
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginError.style.display = 'none';
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    try {
+      const res = await fetch('/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+      });
+      if (!res.ok) {
+        loginError.innerText = 'Неверный логин или пароль';
+        loginError.style.display = 'block';
+        return;
+      }
+      const data = await res.json();
+      localStorage.setItem('token', data.access_token);
+      // переключаем интерфейс
+      loginScreen.style.display = 'none';
+      work.style.display = 'block';
+      who.innerText = username;
+      nickInput.focus();
+      // при входе загрузим историю автоматически
+      await loadHistory();
+    } catch (err) {
+      loginError.innerText = 'Ошибка сети';
+      loginError.style.display = 'block';
+    }
+  });
+
+  // Устанавливаем статус (не пропадает автоматически, обновляется при новой проверке)
+  function setStatus(nick, status) {
+    if (!status) { statusEl.innerHTML = ''; return; }
+    if (status.includes('Ник занят')) {
+      statusEl.innerHTML = `<span style="font-size:20px;color:${getComputedStyle(document.documentElement).getPropertyValue('--bad') || '#f44336'}">❌</span>
+                            <div style="color:#f44336">${nick}: ${status}</div>`;
+    } else {
+      statusEl.innerHTML = `<span style="font-size:20px;color:${getComputedStyle(document.documentElement).getPropertyValue('--good') || '#4caf50'}">✅</span>
+                            <div style="color:#4caf50">${nick}: ${status}</div>`;
+    }
+  }
+
+  // Проверка ника
+  async function checkNickname() {
+    const nickname = nickInput.value.trim();
+    if (!nickname) return;
+    const token = localStorage.getItem('token');
+    if (!token) { alert('Требуется вход'); return; }
+
+    try {
+      const res = await fetch('/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ nicknames: [nickname] })
+      });
+      if (!res.ok) { alert('Ошибка при проверке'); return; }
+      const data = await res.json();
+      const status = data.results[0].status;
+      setStatus(nickname, status);
+      nickInput.value = '';
+    } catch (err) {
+      alert('Ошибка сети');
+    }
+  }
+
+  // Загрузка истории
+  async function loadHistory() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch('/history', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!res.ok) { console.warn('history fetch failed'); return; }
+      const list = await res.json();
+      historyBox.innerHTML = list.map(row => {
+        const cls = row.includes('Ник занят') ? 'taken' : (row.includes('Не найдено') ? 'free' : '');
+        return `<div class="row ${cls}">${row}</div>`;
+      }).join('');
+    } catch (err) {
+      console.warn('loadHistory err', err);
+    }
+  }
+
+  // кнопки
+  checkBtn.addEventListener('click', checkNickname);
+  historyBtn.addEventListener('click', () => {
+    // toggle history visibility
+    if (historyBox.style.display === 'none' || historyBox.style.display === '') {
+      historyBox.style.display = 'block';
+      loadHistory();
+    } else {
+      historyBox.style.display = 'none';
+    }
+  });
+
+  // Enter для поля ника
+  nickInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      checkNickname();
+    }
+  });
+
+  // при загрузке — если есть токен, сразу показать рабочую панель
+  window.addEventListener('load', async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // попытаемся получить историю, чтобы проверить валидность токена
+      try {
+        const r = await fetch('/history', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (r.ok) {
+          // если токен валиден — переключаем интерфейс
+          loginScreen.style.display = 'none';
+          work.style.display = 'block';
+          // кто есть в токене мы не парсим на фронте, подгрузим историю и оставим поле пустым
+          await loadHistory();
         } else {
-            alert("❌ Неверный логин или пароль");
+          // токен старый — удалим
+          localStorage.removeItem('token');
         }
-    });
-
-    document.getElementById("checkBtn").addEventListener("click", async () => {
-        const nickname = document.getElementById("nickname").value.trim();
-        if (!nickname) return;
-
-        const token = localStorage.getItem("token");
-        const res = await fetch("/check", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ nicknames: [nickname] })
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            setStatusMessage(nickname, data.results[0].status);
-            document.getElementById("nickname").value = "";
-        } else {
-            alert("❌ Ошибка при проверке ника");
-        }
-    });
-
-    document.getElementById("historyBtn").addEventListener("click", async () => {
-        const token = localStorage.getItem("token");
-        const res = await fetch("/history", { headers: { "Authorization": `Bearer ${token}` } });
-
-        if (res.ok) {
-            const data = await res.json();
-            historyBox.innerHTML = data
-                .map(item => {
-                    let color = "";
-                    if (item.includes("Ник занят")) {
-                        color = "red";
-                    } else if (item.includes("Не найдено")) {
-                        color = "limegreen";
-                    }
-                    return `<div style="color:${color};">${item}</div>`;
-                })
-                .join("");
-            historyBox.style.display = "block";
-        } else {
-            alert("❌ Ошибка при получении истории");
-        }
-    });
+      } catch (err) {
+        console.warn('initial check error');
+      }
+    }
+  });
 </script>
-
 </body>
 </html>
