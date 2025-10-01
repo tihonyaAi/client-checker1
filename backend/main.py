@@ -1,162 +1,97 @@
-from fastapi import FastAPI, Request, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from typing import List
+from fastapi import FastAPI, Request, Depends, Form, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt, JWTError
+import json, os
 from datetime import datetime, timedelta
-from pydantic import BaseModel
-import jwt
-import os
+from typing import List
 
-app = FastAPI()
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# templates folder
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
-
-# JWT settings
-SECRET_KEY = "replace_this_with_a_long_random_secret_if_needed"
+# ==== Настройки ====
+SECRET_KEY = "supersecretkey"      # секретный ключ для JWT
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
+ACCESS_TOKEN_EXPIRE_MINUTES = 600
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+# ==== Файл хранения данных ====
+DATA_FILE = os.path.join(os.path.dirname(__file__), "data.json")
 
-# -------------------------
-# Create users programmatically:
-# - 35 manager accounts: W1500CR .. W1534CR (passwords G13000 .. G13034)
-# - One admin account: aurum_admin / ADM!n2025 (admin=True)
-# You can edit this block later if you want different names/passwords.
-# -------------------------
+# ==== FastAPI ====
+app = FastAPI()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-fake_users = {}
+# ==== Работа с JSON ====
+def load_data():
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"users": {}, "taken_nicks": [], "history": {}}
 
-# generate 35 manager accounts
-start_num = 1500
-count = 35
-for i in range(count):
-    num = start_num + i
-    username = f"W{num}CR"
-    password = f"G13{num}"  # e.g. G131500 for W1500CR
-    # store plain password for simplicity (no bcrypt)
-    fake_users[username] = {
-        "username": username,
-        "password": password,
-        "history": [],
-        "is_admin": False
-    }
+def save_data(data):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
-# keep older account if you want (optional) — example
-# fake_users["W1499CR"] = {
-#     "username": "W1499CR",
-#     "password": "G12793",
-#     "history": [],
-#     "is_admin": False
-# }
+db = load_data()
 
-# add separate admin account
-fake_users["aurum_admin"] = {
-    "username": "aurum_admin",
-    "password": "ADM!n2025",
-    "history": [],
-    "is_admin": True
-}
-
-# Global taken nicks and global history
-taken_nicks = set()   # store lower() values
-global_history = []   # list of entries: dicts with time/nickname/status/user
-
-# -------------------------
-# Utilities
-# -------------------------
+# ==== Авторизация ====
 def authenticate_user(username: str, password: str):
-    user = fake_users.get(username)
-    if not user:
-        return None
-    if password != user.get("password"):
-        return None
-    return user
+    if username in db["users"] and db["users"][username] == password:
+        return {"username": username}
+    return None
 
-def create_access_token(username: str):
-    to_encode = {"sub": username, "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)}
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        if not username or username not in fake_users:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-        return fake_users[username]
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        username: str = payload.get("sub")
+        if username is None or username not in db["users"]:
+            raise HTTPException(status_code=401, detail="Неавторизован")
+        return username
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Неверный токен")
 
-# -------------------------
-# Routes
-# -------------------------
-
-@app.get("/", response_class=HTMLResponse)
-def get_home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
+# ==== Роуты ====
 @app.post("/token")
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)
+async def login(username: str = Form(...), password: str = Form(...)):
+    """Вход в систему и выдача токена"""
+    user = authenticate_user(username, password)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль")
-    token = create_access_token(form_data.username)
-    return {"access_token": token, "token_type": "bearer"}
-
-class NicknameRequest(BaseModel):
-    nicknames: List[str]
+        raise HTTPException(status_code=401, detail="Неверный логин или пароль")
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(data={"sub": user["username"]}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/check")
-def check_nicknames(data: NicknameRequest, user=Depends(get_current_user)):
+async def check_nickname(request: Request, current_user: str = Depends(get_current_user)):
+    """Проверка ника"""
+    body = await request.json()
+    nicknames: List[str] = body.get("nicknames", [])
     results = []
-    for nick in data.nicknames:
-        nick_str = nick.strip()
-        key = nick_str.lower()
-        if key in taken_nicks:
-            status_text = "Ник занят"
+
+    for nickname in nicknames:
+        if nickname in db["taken_nicks"]:
+            results.append({"nickname": nickname, "status": "Ник занят"})
         else:
-            status_text = "Не найдено"
-            taken_nicks.add(key)
-        entry = {
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "nickname": nick_str,
-            "status": status_text,
-            "user": user["username"]
-        }
-        # append to user's personal history and global history
-        user["history"].append(entry)
-        global_history.append(entry)
-        results.append({"nickname": nick_str, "status": status_text})
+            db["taken_nicks"].append(nickname)
+            results.append({"nickname": nickname, "status": "Свободен"})
+
+        # сохраняем историю
+        db["history"].setdefault(current_user, []).append(f"{nickname} - {results[-1]['status']}")
+
+    save_data(db)
     return {"results": results}
 
 @app.get("/history")
-def get_history(user=Depends(get_current_user)):
-    # Admin sees global history
-    if user.get("is_admin"):
-        sorted_history = sorted(global_history, key=lambda x: x["time"], reverse=True)
-        return [
-            f"{item['time']} — {item['user']} — {item['nickname']} — {item['status']}"
-            for item in sorted_history
-        ]
-    # Normal user sees personal history only
-    else:
-        sorted_personal = sorted(user["history"], key=lambda x: x["time"], reverse=True)
-        return [
-            f"{item['time']} — {item['nickname']} — {item['status']}"
-            for item in sorted_personal
-        ]
+async def get_history(current_user: str = Depends(get_current_user)):
+    """История проверок: админ видит всех, обычные — только себя"""
+    if current_user == "admin":
+        return {"history": db["history"]}
+    return {"history": db["history"].get(current_user, [])}
+
+@app.get("/export")
+def export_data():
+    """Экспорт всех данных (для админа, либо отладки)"""
+    return db
